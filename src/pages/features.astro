@@ -1,0 +1,104 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SEO from '../components/SEO.astro';
+import FeatureGrid from '../components/FeatureGrid';
+import CTASection from '../components/CTASection';
+import { generateBreadcrumbSchema } from '../utils/schema';
+
+const serviceInfoEntries = await getCollection('service-info');
+const serviceInfo = serviceInfoEntries[0];
+const data = serviceInfo?.data || {};
+const baseUrl = data.siteUrl || Astro.url.origin;
+
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: 'Home', url: baseUrl },
+  { name: 'Features', url: `${baseUrl}/features` },
+]);
+
+const defaultFeatures = data.features || [
+  { title: 'HD & 4K Quality', description: 'Crystal clear streaming in up to 4K resolution for supported channels and content.', icon: 'tv' },
+  { title: 'Massive Content Library', description: 'Access thousands of live channels and on-demand movies from around the world.', icon: 'film' },
+  { title: 'Global Coverage', description: 'Channels and content from multiple countries and in multiple languages.', icon: 'globe' },
+  { title: 'Secure & Private', description: 'Your streaming activity is protected with enterprise-grade security.', icon: 'shield' },
+  { title: 'Fast & Reliable', description: 'Optimized servers ensure buffer-free streaming experience 24/7.', icon: 'zap' },
+  { title: 'Multi-Device Support', description: 'Watch on Smart TV, mobile, tablet, or any device with our app.', icon: 'smartphone' },
+];
+---
+
+<BaseLayout>
+  <SEO
+    slot="head"
+    title={`Features - ${data.brandName}`}
+    description={`Discover all the premium features of ${data.brandName} IPTV service. HD streaming, massive content library, multi-device support, and more.`}
+    canonicalURL={`${baseUrl}/features`}
+    schema={[breadcrumbSchema]}
+  />
+
+  <section class="py-20 bg-gradient-to-b from-background to-muted/30">
+    <div class="container mx-auto px-4 text-center">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">
+        Premium Features
+      </h1>
+      <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
+        Everything you need for the ultimate streaming experience, all in one subscription.
+      </p>
+    </div>
+  </section>
+
+  <FeatureGrid client:visible features={defaultFeatures} primaryColor={data.primaryColor} />
+
+  <section class="py-20">
+    <div class="container mx-auto px-4">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div>
+          <h2 class="text-3xl font-bold mb-6">Stream Anywhere, Anytime</h2>
+          <p class="text-muted-foreground mb-6">
+            Our service is compatible with all major devices and platforms. Whether you're at home on your smart TV or on the go with your mobile device, your entertainment follows you everywhere.
+          </p>
+          <ul class="space-y-4">
+            <li class="flex items-center gap-3">
+              <svg class="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Smart TVs (Samsung, LG, Android TV)</span>
+            </li>
+            <li class="flex items-center gap-3">
+              <svg class="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>iOS and Android mobile devices</span>
+            </li>
+            <li class="flex items-center gap-3">
+              <svg class="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Amazon Fire TV and Firestick</span>
+            </li>
+            <li class="flex items-center gap-3">
+              <svg class="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>Windows, Mac, and Linux computers</span>
+            </li>
+          </ul>
+        </div>
+        <div class="bg-muted/50 rounded-2xl p-8 text-center">
+          <div class="text-6xl font-bold text-gradient mb-4">{data.channelCount}+</div>
+          <div class="text-xl text-muted-foreground mb-8">Live Channels</div>
+          <div class="text-6xl font-bold text-gradient mb-4">{data.vodCount}+</div>
+          <div class="text-xl text-muted-foreground">Movies & Series</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <CTASection
+    client:visible
+    title="Start Your Free Trial Today"
+    subtitle="Experience all these features with our 7-day money-back guarantee"
+    buttonText="Get Started"
+    buttonLink="/pricing"
+    primaryColor={data.primaryColor}
+  />
+</BaseLayout>

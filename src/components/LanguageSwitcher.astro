@@ -1,0 +1,61 @@
+---
+import { LANGUAGES, getLocalizedPath } from '../utils/i18n';
+
+interface Props {
+  currentLang?: string;
+}
+
+const { currentLang = 'en' } = Astro.props;
+const currentPath = Astro.url.pathname.replace(/^\/[a-z]{2}\//, '/');
+
+const availableLanguages = Object.entries(LANGUAGES);
+const currentLanguage = LANGUAGES[currentLang as keyof typeof LANGUAGES] || LANGUAGES.en;
+---
+
+<div class="relative" id="lang-switcher">
+  <button
+    id="lang-btn"
+    class="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+    aria-label="Select language"
+  >
+    <span class="text-base">{currentLanguage.flag}</span>
+    <span class="hidden sm:inline">{currentLanguage.name}</span>
+    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+    </svg>
+  </button>
+
+  <div
+    id="lang-menu"
+    class="hidden absolute right-0 mt-2 w-48 rounded-md border border-border bg-background shadow-lg z-50"
+  >
+    <div class="py-1">
+      {availableLanguages.map(([code, lang]) => (
+        <a
+          href={getLocalizedPath(currentPath, code)}
+          class:list={[
+            "flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:bg-accent",
+            code === currentLang ? "bg-accent font-medium" : "text-muted-foreground"
+          ]}
+        >
+          <span class="text-base">{lang.flag}</span>
+          <span>{lang.name}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+</div>
+
+<script>
+  const langBtn = document.getElementById('lang-btn');
+  const langMenu = document.getElementById('lang-menu');
+
+  langBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    langMenu?.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', () => {
+    langMenu?.classList.add('hidden');
+  });
+</script>

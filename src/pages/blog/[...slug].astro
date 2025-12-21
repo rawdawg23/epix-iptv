@@ -1,0 +1,203 @@
+---
+import { getCollection, render } from 'astro:content';
+import BlogLayout from '../../layouts/BlogLayout.astro';
+import SEO from '../../components/SEO.astro';
+import BlogCTA from '../../components/BlogCTA';
+import TableOfContents from '../../components/TableOfContents';
+import { generateArticleSchema, generateBreadcrumbSchema } from '../../utils/schema';
+
+export async function getStaticPaths() {
+  const blogPosts = await getCollection('blog').catch(() => []);
+  return blogPosts.map(post => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+interface Props {
+  post: any;
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+// Get all blog posts for related posts section
+const allPosts = await getCollection('blog').catch(() => []);
+const serviceInfoEntries = await getCollection('service-info');
+
+// Find related posts (same tags or category, excluding current post)
+const tagRelatedPosts = allPosts
+  .filter(p => p.id !== post.id)
+  .filter(p => {
+    const sharedTags = post.data.tags?.filter((tag: string) => p.data.tags?.includes(tag)) || [];
+    return sharedTags.length > 0 || p.data.category === post.data.category;
+  })
+  .slice(0, 3);
+
+// Fallback to recent posts if no related posts found
+const relatedPosts = tagRelatedPosts.length > 0 
+  ? tagRelatedPosts 
+  : allPosts
+      .filter(p => p.id !== post.id)
+      .sort((a, b) => new Date(b.data.pubDate).getTime() - new Date(a.data.pubDate).getTime())
+      .slice(0, 3);
+const serviceInfo = serviceInfoEntries[0];
+const data = serviceInfo?.data || {};
+const baseUrl = data.siteUrl || Astro.url.origin;
+
+const articleSchema = generateArticleSchema({
+  headline: post.data.title,
+  description: post.data.description,
+  image: post.data.image ? `${baseUrl}${post.data.image}` : `${baseUrl}/og-image.jpg`,
+  datePublished: post.data.pubDate,
+  dateModified: post.data.updatedDate,
+  author: {
+    name: post.data.author,
+  },
+  publisher: {
+    name: data.brandName,
+    logo: `${baseUrl}/favicon.svg`,
+  },
+});
+
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: 'Home', url: baseUrl },
+  { name: 'Blog', url: `${baseUrl}/blog` },
+  { name: post.data.title, url: `${baseUrl}/blog/${post.id}` },
+]);
+---
+
+<BlogLayout>
+  <SEO
+    slot="head"
+    title={post.data.title}
+    description={post.data.description}
+    canonicalURL={`${baseUrl}/blog/${post.id}`}
+    ogImage={post.data.image ? `${baseUrl}${post.data.image}` : undefined}
+    ogType="article"
+    articleDate={post.data.pubDate}
+    articleModified={post.data.updatedDate}
+    articleAuthor={post.data.author}
+    articleTags={post.data.tags}
+    schema={[articleSchema, breadcrumbSchema]}
+    pageType="blog"
+    breadcrumbs={[
+      { name: 'Home', url: '/' },
+      { name: 'Blog', url: '/blog' },
+      { name: post.data.title, url: `/blog/${post.id}` },
+    ]}
+  />
+
+  <header class="not-prose mb-8">
+    <div class="flex flex-wrap gap-2 mb-4">
+      {post.data.tags.map((tag: string) => (
+        <span class="text-xs px-3 py-1 bg-muted rounded-full text-muted-foreground">
+          {tag}
+        </span>
+      ))}
+    </div>
+    <h1 class="text-4xl font-bold mb-4">{post.data.title}</h1>
+    <div class="flex items-center gap-4 text-muted-foreground">
+      <span>By {post.data.author}</span>
+      <span>|</span>
+      <time datetime={post.data.pubDate.toISOString()}>
+        Published: {post.data.pubDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })}
+      </time>
+      {post.data.updatedDate && (
+        <>
+          <span>|</span>
+          <time datetime={post.data.updatedDate.toISOString()}>
+            Updated: {post.data.updatedDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </time>
+        </>
+      )}
+    </div>
+  </header>
+
+  <!-- Table of Contents (rendered client-side from content headings) -->
+  <TableOfContents 
+    client:visible 
+    items={[]} 
+  />
+
+  {post.data.image && (
+    <img
+      src={post.data.image}
+      alt={post.data.imageAlt || post.data.title}
+      class="w-full h-auto rounded-lg mb-8 not-prose"
+      loading="eager"
+    />
+  )}
+
+  <Content />
+
+  <!-- Blog CTA with optional coupon -->
+  <BlogCTA
+    client:visible
+    headline={post.data.ctaHeadline || "Ready to Start Streaming?"}
+    description={post.data.ctaDescription || "Subscribe now and get instant access to premium content"}
+    couponCode={post.data.ctaCouponCode}
+    couponDiscount={post.data.ctaCouponDiscount}
+    primaryColor={data.primaryColor}
+    pricingLink="/pricing"
+  />
+
+  <!-- Related Posts Section -->
+  {relatedPosts.length > 0 && (
+    <section class="not-prose mt-12 pt-8 border-t border-border">
+      <h2 class="text-2xl font-bold mb-6">Related Posts</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        {relatedPosts.map((relatedPost: any) => (
+          <a
+            href={`/blog/${relatedPost.id}`}
+            class="group block p-4 rounded-lg border border-border hover:border-primary/50 transition-colors"
+          >
+            {relatedPost.data.image && (
+              <img
+                src={relatedPost.data.image}
+                alt={relatedPost.data.imageAlt || relatedPost.data.title}
+                class="w-full h-32 object-cover rounded-md mb-3"
+                loading="lazy"
+              />
+            )}
+            <h3 class="font-semibold group-hover:text-primary transition-colors line-clamp-2">
+              {relatedPost.data.title}
+            </h3>
+            <p class="text-sm text-muted-foreground mt-1 line-clamp-2">
+              {relatedPost.data.description}
+            </p>
+          </a>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <footer class="not-prose mt-12 pt-8 border-t border-border">
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <a
+        href="/blog"
+        class="inline-flex items-center gap-2 text-primary hover:underline"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Blog
+      </a>
+      <div class="flex items-center gap-4 text-sm text-muted-foreground">
+        <a href="/features" class="hover:text-primary transition-colors">Explore Features</a>
+        <span class="hidden md:inline">|</span>
+        <a href="/pricing" class="hover:text-primary transition-colors">View Pricing</a>
+        <span class="hidden md:inline">|</span>
+        <a href="/contact" class="hover:text-primary transition-colors">Contact Us</a>
+      </div>
+    </div>
+  </footer>
+</BlogLayout>

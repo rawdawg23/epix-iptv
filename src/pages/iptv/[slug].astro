@@ -1,0 +1,164 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SEO from '../../components/SEO.astro';
+import ReadMore from '../../components/ReadMore';
+import ProsCons from '../../components/ProsCons';
+import TableOfContents from '../../components/TableOfContents';
+import FAQSection from '../../components/FAQSection';
+import { generateProductSchema, generateFAQSchema, generateBreadcrumbSchema } from '../../utils/schema';
+
+export async function getStaticPaths() {
+  const services = await getCollection('iptv-services');
+  return services.map(service => ({
+    params: { slug: service.id },
+    props: { service },
+  }));
+}
+
+const { service } = Astro.props;
+const { Content } = await service.render();
+const data = service.data;
+
+const baseUrl = Astro.url.origin;
+
+const tocItems = [
+  { id: 'introduction', title: 'Introduction', level: 2 },
+  { id: 'what-is', title: `What is ${data.name}?`, level: 2 },
+  { id: 'channels-content', title: 'Channels & Content', level: 2 },
+  { id: 'how-it-works', title: 'How It Works', level: 2 },
+  { id: 'supported-devices', title: 'Supported Devices', level: 2 },
+  { id: 'supported-apps', title: 'Supported IPTV Apps', level: 2 },
+  { id: 'streaming-quality', title: 'Streaming Quality', level: 2 },
+  { id: 'pricing', title: 'Pricing & Free Trial', level: 2 },
+  { id: 'pros-cons', title: 'Pros & Cons', level: 2 },
+  { id: 'legal-safe', title: 'Is It Legal & Safe?', level: 2 },
+  { id: 'vpn', title: 'VPN Compatibility', level: 2 },
+  { id: 'support', title: 'Customer Support', level: 2 },
+  { id: 'alternatives', title: 'Alternatives', level: 2 },
+  { id: 'faq', title: 'FAQ', level: 2 },
+  { id: 'verdict', title: 'Final Verdict', level: 2 },
+];
+
+const productSchema = generateProductSchema({
+  name: data.name,
+  description: data.description,
+  brand: data.name,
+  offers: [
+    {
+      priceCurrency: 'USD',
+      price: data.price || 9.99,
+      name: 'Monthly Subscription',
+      url: `${baseUrl}/iptv/${service.id}`,
+    },
+  ],
+  aggregateRating: {
+    ratingValue: data.rating || 4.5,
+    reviewCount: data.reviewCount || 100,
+  },
+});
+
+const faqSchema = data.faq ? generateFAQSchema(data.faq) : null;
+
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: 'Home', url: baseUrl },
+  { name: 'IPTV Services', url: `${baseUrl}/iptv` },
+  { name: data.name, url: `${baseUrl}/iptv/${service.id}` },
+]);
+
+const schemas = [productSchema, breadcrumbSchema];
+if (faqSchema) schemas.push(faqSchema);
+---
+
+<BaseLayout>
+  <SEO
+    slot="head"
+    title={`${data.name} Review ${new Date().getFullYear()} - Channels, Pricing & More`}
+    description={data.description}
+    canonicalURL={`${baseUrl}/iptv/${service.id}`}
+    schema={schemas}
+  />
+
+  <article class="container mx-auto px-4 py-12 max-w-4xl">
+    <header class="mb-8">
+      <div class="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+        <a href="/" class="hover:text-primary">Home</a>
+        <span>/</span>
+        <a href="/iptv" class="hover:text-primary">IPTV Services</a>
+        <span>/</span>
+        <span>{data.name}</span>
+      </div>
+      
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">
+        {data.name} Review {new Date().getFullYear()}
+      </h1>
+      
+      <p class="text-xl text-muted-foreground">
+        {data.tagline || `Complete review of ${data.name} IPTV service`}
+      </p>
+      
+      <div class="flex items-center gap-4 mt-6">
+        <div class="flex items-center gap-1">
+          {[...Array(5)].map((_, i) => (
+            <svg 
+              class={`h-5 w-5 ${i < Math.floor(data.rating || 4.5) ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`}
+              viewBox="0 0 24 24"
+            >
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+          ))}
+          <span class="ml-2 font-semibold">{(data.rating || 4.5).toFixed(1)}</span>
+        </div>
+        <span class="text-muted-foreground">|</span>
+        <span class="text-muted-foreground">{data.reviewCount || 100} reviews</span>
+      </div>
+    </header>
+
+    <TableOfContents client:visible items={tocItems} />
+
+    <ReadMore client:visible previewHeight={600}>
+      <div class="prose prose-lg dark:prose-invert max-w-none">
+        <Content />
+      </div>
+      
+      <section id="pros-cons" class="mt-12">
+        <h2 class="text-2xl font-bold mb-6">Pros & Cons</h2>
+        <ProsCons 
+          client:visible 
+          pros={data.pros || ['Large channel selection', 'Good streaming quality', 'Multiple device support']}
+          cons={data.cons || ['Customer support could be better', 'Price increases over time']}
+        />
+      </section>
+      
+      {data.faq && data.faq.length > 0 && (
+        <section id="faq" class="mt-12">
+          <h2 class="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+          <FAQSection 
+            client:visible 
+            items={data.faq.map((f: any) => ({ question: f.question, answer: f.answer }))} 
+          />
+        </section>
+      )}
+    </ReadMore>
+
+    <div class="mt-12 p-6 bg-muted/50 rounded-xl border border-border">
+      <h3 class="text-xl font-semibold mb-4">Ready to Try {data.name}?</h3>
+      <p class="text-muted-foreground mb-4">
+        Start streaming today with their free trial or subscription plans.
+      </p>
+      {data.affiliateLink && (
+        <a
+          href={data.affiliateLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
+        >
+          Visit {data.name}
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+      )}
+    </div>
+  </article>
+</BaseLayout>

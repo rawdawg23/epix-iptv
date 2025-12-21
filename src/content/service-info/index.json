@@ -1,0 +1,61 @@
+[
+  {
+    "id": "main",
+    "brandName": "epix iptv​",
+    "tagline": "Experience the Ultimate Entertainment with epix iptv​ - Your Streaming Revolution",
+    "description": "epix iptv​ brings you the latest in streaming technology with unparalleled access to thousands of channels and on-demand content tailored for the US audience. Discover unmatched entertainment with superior streaming quality and no buffering, all from https://epix-iptv-.pages.dev.",
+    "channelCount": 55000,
+    "vodCount": 90000,
+    "supportEmail": "support@example.com",
+    "primaryColor": "#3B82F6",
+    "secondaryColor": "#1E40AF",
+    "siteUrl": "https://epix-iptv-.pages.dev",
+    "features": [
+      {
+        "title": "Extensive Channel Selection",
+        "description": "Enjoy an extensive array of channels from around the world. Whether it's sports, news, or entertainment, epix iptv​ has got you covered with a diverse range offering something for everyone.",
+        "icon": "Tv"
+      },
+      {
+        "title": "On-Demand Movies",
+        "description": "Access a vast library of on-demand movies including the latest blockbusters and timeless classics. With epix iptv​​, your favorite films are just a click away, ready to be streamed anytime.",
+        "icon": "Film"
+      },
+      {
+        "title": "Lightning-Fast Streaming",
+        "description": "Say goodbye to buffering and slow connections. epix iptv​ ensures lightning-fast streaming speeds with the reliability you can trust for a seamless viewing experience.",
+        "icon": "Zap"
+      },
+      {
+        "title": "Secure Viewing Experience",
+        "description": "Enjoy worry-free streaming with epix iptv​​. Our service uses advanced security protocols to protect your data and ensure your viewing privacy is safeguarded at all times.",
+        "icon": "Shield"
+      },
+      {
+        "title": "Global Access",
+        "description": "Travel anywhere with the assurance that your epix iptv​ service is equally accessible. Stream your favorite shows and channels no matter where you are with our global connectivity.",
+        "icon": "Globe"
+      },
+      {
+        "title": "Catch Up TV",
+        "description": "Never miss your favorite shows again with our Catch Up TV feature. Watch the episodes you missed at your convenience, fitting into your schedule, no matter how busy life gets.",
+        "icon": "Clock"
+      },
+      {
+        "title": "24/7 Customer Support",
+        "description": "Our dedicated support team is available 24/7 to help with any queries or issues. Contact us anytime at support@example.com, and we'll ensure you get the help you need quickly.",
+        "icon": "Headphones"
+      },
+      {
+        "title": "Flexible Payment Options",
+        "description": "Choose from a variety of payment methods to subscribe easily and securely. epix iptv​ offers flexible options to meet your needs, ensuring convenience at every step of your subscription.",
+        "icon": "CreditCard"
+      }
+    ],
+    "paymentSettings": {
+      "buttonText": "BUY NOW",
+      "paymentType": "paygate",
+      "paygateWalletAddress": "0x1e2c390ae5602f3662332061cae6c5658cd54e22"
+    }
+  }
+]

@@ -1,0 +1,16 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  currentLang?: string;
+}
+
+const { currentLang = 'en' } = Astro.props;
+---
+
+<BaseLayout currentLang={currentLang}>
+  <slot name="head" slot="head" />
+  <article class="prose prose-lg dark:prose-invert mx-auto px-4 py-12 max-w-4xl">
+    <slot />
+  </article>
+</BaseLayout>

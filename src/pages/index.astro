@@ -1,0 +1,208 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SEO from '../components/SEO.astro';
+import HeroSection from '../components/HeroSection';
+import FeatureGrid from '../components/FeatureGrid';
+import FilmsSeriesSection from '../components/FilmsSeriesSection';
+import SportsSection from '../components/SportsSection';
+import GuaranteeSection from '../components/GuaranteeSection';
+import HowToPurchaseSection from '../components/HowToPurchaseSection';
+import CompatibleDevicesSection from '../components/CompatibleDevicesSection';
+import PricingSection from '../components/PricingSection';
+import FAQSection from '../components/FAQSection';
+import TestimonialSection from '../components/TestimonialSection';
+import CTASection from '../components/CTASection';
+import {
+  generateOrganizationSchema,
+  generateProductSchema,
+  generateWebSiteSchema,
+  generateBreadcrumbSchema,
+  generateFAQSchema,
+  generateReviewSchema,
+} from '../utils/schema';
+
+const [serviceInfoEntries, siteConfigEntries, pricingPlans, faqItems, testimonials] = await Promise.all([
+  getCollection('service-info'),
+  getCollection('site-config').catch(() => []),
+  getCollection('pricing'),
+  getCollection('faq'),
+  getCollection('testimonials').catch(() => []),
+]);
+
+const serviceInfo = serviceInfoEntries[0];
+const data = serviceInfo?.data || {};
+const siteConfig = siteConfigEntries[0]?.data || {};
+const guaranteeDays = siteConfig.guaranteeDays || 7;
+
+const baseUrl = data.siteUrl || Astro.url.origin;
+
+const organizationSchema = generateOrganizationSchema({
+  name: data.brandName,
+  url: baseUrl,
+  logo: `${baseUrl}/favicon.svg`,
+  description: data.description,
+  email: data.supportEmail,
+  phone: data.supportPhone,
+  socialProfiles: Object.values(data.socialLinks || {}).filter(Boolean) as string[],
+});
+
+const productSchema = generateProductSchema({
+  name: `${data.brandName} IPTV Subscription`,
+  description: data.description,
+  brand: data.brandName,
+  offers: pricingPlans.map(plan => ({
+    priceCurrency: plan.data.currency,
+    price: plan.data.price,
+    name: plan.data.name,
+    url: `${baseUrl}/pricing`,
+  })),
+  aggregateRating: {
+    ratingValue: 4.8,
+    reviewCount: testimonials.length || 150,
+  },
+});
+
+const websiteSchema = generateWebSiteSchema(
+  data.brandName,
+  baseUrl,
+  data.description
+);
+
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: 'Home', url: baseUrl },
+]);
+
+// Sort content collections
+const sortedPricing = [...pricingPlans].sort((a, b) => (a.data.order || 0) - (b.data.order || 0));
+const sortedFaq = [...faqItems].sort((a, b) => (a.data.order || 0) - (b.data.order || 0));
+
+// Generate FAQ schema from FAQ content collection (automatic rich snippets)
+const faqSchema = sortedFaq.length > 0 
+  ? generateFAQSchema(sortedFaq.map(f => ({
+      question: f.data.question,
+      answer: f.body || f.data.answer || '',
+    })))
+  : null;
+
+// Generate Review schema from testimonials content collection (automatic rich snippets)
+const reviewSchema = testimonials.length > 0
+  ? generateReviewSchema(
+      testimonials.map(t => ({
+        author: t.data.author || t.data.name || 'Customer',
+        reviewBody: t.body || t.data.content || '',
+        ratingValue: t.data.rating || 5,
+        datePublished: t.data.date ? new Date(t.data.date) : undefined,
+      })),
+      { name: `${data.brandName} IPTV Service` }
+    )
+  : null;
+
+// Combine all schemas, filtering out nulls
+// Includes: Organization, Product (with all packages), WebSite, Breadcrumb, FAQPage, Reviews
+const schemas = [
+  organizationSchema, 
+  productSchema, 
+  websiteSchema, 
+  breadcrumbSchema,
+  faqSchema,
+  reviewSchema,
+].filter(Boolean);
+---
+
+<BaseLayout>
+  <SEO
+    slot="head"
+    title={data.brandName}
+    description={data.description}
+    canonicalURL={baseUrl}
+    ogImage={`${baseUrl}/og-image.jpg`}
+    schema={schemas}
+    pageType="home"
+  />
+
+  <!-- Section 1: Hero -->
+  <HeroSection
+    client:load
+    title={data.brandName}
+    subtitle={data.tagline}
+    channelCount={data.channelCount}
+    vodCount={data.vodCount}
+    primaryColor={data.primaryColor}
+  />
+
+  <!-- Features (optional) -->
+  {data.features && data.features.length > 0 && (
+    <FeatureGrid client:visible features={data.features} primaryColor={data.primaryColor} />
+  )}
+
+  <!-- Section 2: Films & Series -->
+  <FilmsSeriesSection 
+    client:visible 
+    brandName={data.brandName} 
+    primaryColor={data.primaryColor} 
+  />
+
+  <!-- Section 3: Sports -->
+  <SportsSection 
+    client:visible 
+    brandName={data.brandName} 
+    primaryColor={data.primaryColor} 
+  />
+
+  <!-- Section 4: 100% Money Back Guarantee -->
+  <GuaranteeSection 
+    client:visible 
+    brandName={data.brandName} 
+    primaryColor={data.primaryColor}
+    guaranteeDays={guaranteeDays}
+  />
+
+  <!-- Section 5: How to Purchase -->
+  <HowToPurchaseSection 
+    client:visible 
+    brandName={data.brandName} 
+    primaryColor={data.primaryColor} 
+  />
+
+  <!-- Section 6: Compatible Devices -->
+  <CompatibleDevicesSection 
+    client:visible 
+    brandName={data.brandName} 
+    primaryColor={data.primaryColor} 
+  />
+
+  <!-- Pricing Section -->
+  {sortedPricing.length > 0 && (
+    <PricingSection
+      client:visible
+      plans={sortedPricing.map(p => ({ ...p.data, slug: p.id }))}
+      primaryColor={data.primaryColor}
+      paymentSettings={data.paymentSettings}
+      brandName={data.brandName}
+    />
+  )}
+
+  <!-- Testimonials (optional) -->
+  {testimonials.length > 0 && (
+    <TestimonialSection
+      client:visible
+      testimonials={testimonials.map(t => ({ ...t.data, content: t.body || '' }))}
+    />
+  )}
+
+  <!-- FAQ Section -->
+  {sortedFaq.length > 0 && (
+    <FAQSection client:visible items={sortedFaq.map(f => ({ question: f.data.question, answer: f.body || '' }))} />
+  )}
+
+  <!-- CTA Section -->
+  <CTASection
+    client:visible
+    title="Ready to Start Streaming?"
+    subtitle="Join thousands of satisfied customers and experience premium entertainment"
+    buttonText="Get Started Now"
+    buttonLink="/pricing"
+    primaryColor={data.primaryColor}
+  />
+</BaseLayout>

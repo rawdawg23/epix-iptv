@@ -1,0 +1,128 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SEO from '../../components/SEO.astro';
+import ServiceCard from '../../components/ServiceCard';
+import { generateBreadcrumbSchema, generateWebSiteSchema } from '../../utils/schema';
+
+const services = await getCollection('iptv-services');
+const sortedServices = [...services].sort((a, b) => (b.data.rating || 0) - (a.data.rating || 0));
+
+const [serviceInfoEntries] = await Promise.all([
+  getCollection('service-info'),
+]);
+const serviceInfo = serviceInfoEntries[0];
+const data = serviceInfo?.data || {};
+
+const baseUrl = Astro.url.origin;
+
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: 'Home', url: baseUrl },
+  { name: 'IPTV Services', url: `${baseUrl}/iptv` },
+]);
+
+const websiteSchema = generateWebSiteSchema(
+  `Best IPTV Services ${new Date().getFullYear()}`,
+  baseUrl,
+  `Compare the top IPTV service providers. Honest reviews, pricing comparisons, and detailed feature breakdowns.`
+);
+---
+
+<BaseLayout>
+  <SEO
+    slot="head"
+    title={`Best IPTV Services ${new Date().getFullYear()} - Compare Top Providers`}
+    description={`Compare the best IPTV services of ${new Date().getFullYear()}. Detailed reviews, pricing, channel counts, and honest ratings to help you choose.`}
+    canonicalURL={`${baseUrl}/iptv`}
+    schema={[breadcrumbSchema, websiteSchema]}
+  />
+
+  <div class="container mx-auto px-4 py-12">
+    <header class="text-center mb-12">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">
+        Best IPTV Services {new Date().getFullYear()}
+      </h1>
+      <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
+        Compare the top IPTV providers with our honest reviews. We analyze channels, streaming quality, pricing, and support to help you find the perfect service.
+      </p>
+    </header>
+
+    {sortedServices.length > 0 ? (
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {sortedServices.map((service, index) => (
+          <ServiceCard
+            client:visible
+            name={service.data.name}
+            slug={service.id}
+            rating={service.data.rating || 4.0}
+            channelCount={service.data.channelCount || 500}
+            price={`$${service.data.price || 9.99}`}
+            description={service.data.description || 'Premium IPTV service'}
+            featured={index === 0}
+            primaryColor={data.primaryColor || '#3b82f6'}
+          />
+        ))}
+      </div>
+    ) : (
+      <div class="text-center py-16 bg-muted/50 rounded-xl">
+        <h2 class="text-2xl font-semibold mb-2">No Services Listed Yet</h2>
+        <p class="text-muted-foreground">
+          IPTV service reviews will be added soon.
+        </p>
+      </div>
+    )}
+
+    <section class="mt-16">
+      <h2 class="text-3xl font-bold mb-8 text-center">How We Rate IPTV Services</h2>
+      <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div class="bg-card rounded-xl border border-border p-6">
+          <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold mb-2">Channel Count</h3>
+          <p class="text-sm text-muted-foreground">
+            We verify the actual number of working channels and content variety.
+          </p>
+        </div>
+        
+        <div class="bg-card rounded-xl border border-border p-6">
+          <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold mb-2">Streaming Quality</h3>
+          <p class="text-sm text-muted-foreground">
+            HD, FHD, and 4K quality testing with buffering analysis.
+          </p>
+        </div>
+        
+        <div class="bg-card rounded-xl border border-border p-6">
+          <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold mb-2">Value for Money</h3>
+          <p class="text-sm text-muted-foreground">
+            Comparing features and content against subscription costs.
+          </p>
+        </div>
+        
+        <div class="bg-card rounded-xl border border-border p-6">
+          <div class="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold mb-2">Customer Support</h3>
+          <p class="text-sm text-muted-foreground">
+            Testing response times and helpfulness of support teams.
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+</BaseLayout>

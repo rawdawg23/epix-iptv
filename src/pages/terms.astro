@@ -1,0 +1,104 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SEO from '../components/SEO.astro';
+import { generateBreadcrumbSchema } from '../utils/schema';
+
+const [serviceInfoEntries] = await Promise.all([
+  getCollection('service-info'),
+]);
+const serviceInfo = serviceInfoEntries[0];
+const data = serviceInfo?.data || {};
+
+const brandName = data.brandName || 'IPTV Service';
+const baseUrl = data.siteUrl || Astro.url.origin;
+
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: 'Home', url: baseUrl },
+  { name: 'Terms of Service', url: `${baseUrl}/terms` },
+]);
+---
+
+<BaseLayout>
+  <SEO
+    slot="head"
+    title={`Terms of Service - ${brandName}`}
+    description={`Terms of Service for ${brandName}. Read our terms and conditions for using our services.`}
+    canonicalURL={`${baseUrl}/terms`}
+    schema={[breadcrumbSchema]}
+  />
+
+  <div class="container mx-auto px-4 py-12 max-w-4xl">
+    <h1 class="text-4xl font-bold mb-8">Terms of Service</h1>
+    
+    <div class="prose prose-lg dark:prose-invert max-w-none">
+      <p class="text-muted-foreground">Last updated: {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+      
+      <h2>1. Acceptance of Terms</h2>
+      <p>
+        By accessing and using {brandName}, you agree to be bound by these Terms of Service. 
+        If you do not agree to these terms, please do not use our services.
+      </p>
+
+      <h2>2. Description of Service</h2>
+      <p>
+        {brandName} provides IPTV streaming services including live TV channels, video on demand, 
+        and related entertainment content. The service is provided "as is" and "as available."
+      </p>
+
+      <h2>3. User Responsibilities</h2>
+      <p>As a user of our services, you agree to:</p>
+      <ul>
+        <li>Provide accurate account information</li>
+        <li>Keep your login credentials confidential</li>
+        <li>Use the service only for personal, non-commercial purposes</li>
+        <li>Not share your account with others</li>
+        <li>Comply with all applicable laws and regulations</li>
+      </ul>
+
+      <h2>4. Subscription and Payment</h2>
+      <ul>
+        <li>Subscriptions are billed according to the plan you select</li>
+        <li>Payments are non-refundable except as required by law</li>
+        <li>We reserve the right to change pricing with notice</li>
+        <li>Failure to pay may result in service suspension</li>
+      </ul>
+
+      <h2>5. Content and Intellectual Property</h2>
+      <p>
+        All content provided through our service is protected by copyright and other intellectual property rights. 
+        You may not copy, distribute, or create derivative works without authorization.
+      </p>
+
+      <h2>6. Service Availability</h2>
+      <p>
+        We strive to maintain high availability but do not guarantee uninterrupted service. 
+        We reserve the right to modify, suspend, or discontinue the service at any time.
+      </p>
+
+      <h2>7. Limitation of Liability</h2>
+      <p>
+        To the maximum extent permitted by law, {brandName} shall not be liable for any indirect, 
+        incidental, special, or consequential damages arising from use of our services.
+      </p>
+
+      <h2>8. Termination</h2>
+      <p>
+        We may terminate or suspend your account at any time for violation of these terms 
+        or for any other reason at our discretion.
+      </p>
+
+      <h2>9. Changes to Terms</h2>
+      <p>
+        We reserve the right to modify these terms at any time. Continued use of the service 
+        after changes constitutes acceptance of the new terms.
+      </p>
+
+      <h2>10. Contact</h2>
+      <p>
+        For questions about these terms, contact us at: 
+        <a href={`mailto:${data.supportEmail || 'support@example.com'}`}>{data.supportEmail || 'support@example.com'}</a>
+      </p>
+    </div>
+  </div>
+</BaseLayout>

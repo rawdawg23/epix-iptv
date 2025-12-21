@@ -1,0 +1,183 @@
+---
+import { getCollection } from 'astro:content';
+
+interface Props {
+  title: string;
+  description: string;
+  canonicalURL?: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article' | 'product';
+  articleDate?: Date;
+  articleModified?: Date;
+  articleAuthor?: string;
+  articleTags?: string[];
+  languages?: Record<string, string>;
+  schema?: Record<string, any>[];
+  noindex?: boolean;
+  nofollow?: boolean;
+  pageType?: 'home' | 'pricing' | 'faq' | 'blog' | 'contact' | 'features' | 'legal' | 'guide';
+  focusKeyword?: string;
+  country?: string;
+  breadcrumbs?: Array<{ name: string; url: string }>;
+}
+
+const {
+  title,
+  description,
+  canonicalURL: propCanonicalURL,
+  ogImage = '/og-image.jpg',
+  ogType = 'website',
+  articleDate,
+  articleModified,
+  articleAuthor,
+  articleTags = [],
+  languages = {},
+  schema = [],
+  noindex = false,
+  nofollow = false,
+  pageType = 'website',
+  focusKeyword,
+  country,
+  breadcrumbs = [],
+} = Astro.props;
+
+const siteConfigEntries = await getCollection('site-config');
+const siteConfig = siteConfigEntries[0]?.data;
+
+const PUBLIC_SITE_URL = siteConfig?.siteUrl || import.meta.env.PUBLIC_SITE_URL;
+if (!PUBLIC_SITE_URL && import.meta.env.PROD) {
+  throw new Error('PUBLIC_SITE_URL environment variable is required for production builds. Please set it in your environment or siteConfig.');
+}
+
+const canonicalURL = propCanonicalURL || (PUBLIC_SITE_URL ? new URL(Astro.url.pathname, PUBLIC_SITE_URL).href : Astro.url.href);
+
+const MAX_TITLE_LENGTH = 60;
+const MAX_DESC_LENGTH = 155;
+const brandName = siteConfig?.brandName || 'epix iptv​';
+const brandSuffix = ` | ${brandName}`;
+
+const maxTitleContent = MAX_TITLE_LENGTH - brandSuffix.length;
+const truncatedTitle = title.length > maxTitleContent 
+  ? title.substring(0, maxTitleContent - 3) + '...' 
+  : title;
+const siteTitle = `${truncatedTitle}${brandSuffix}`;
+
+const truncatedDesc = description.length > MAX_DESC_LENGTH 
+  ? description.substring(0, MAX_DESC_LENGTH - 3) + '...' 
+  : description;
+
+const robots = `${noindex ? 'noindex' : 'index'}, ${nofollow ? 'nofollow' : 'follow'}`;
+const fullOgImage = ogImage.startsWith('http') ? ogImage : new URL(ogImage, canonicalURL).href;
+
+const effectiveFocusKeyword = focusKeyword || siteConfig?.focusKeyword || 'IPTV';
+const effectiveCountry = country || siteConfig?.country || '';
+const locale = siteConfig?.locale || 'en-US';
+const guaranteeDays = siteConfig?.guaranteeDays || 7;
+
+const allSchemas = [...schema];
+
+if (breadcrumbs.length > 0) {
+  allSchemas.push({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: breadcrumbs.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: item.url.startsWith('http') ? item.url : `${PUBLIC_SITE_URL}${item.url}`,
+    })),
+  });
+}
+
+if (pageType === 'home' && !schema.some(s => s['@type'] === 'Organization')) {
+  allSchemas.push({
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: brandName,
+    url: PUBLIC_SITE_URL,
+    logo: `${PUBLIC_SITE_URL}/logo.png`,
+    description: siteConfig?.organizationDescription || description,
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer service',
+      email: siteConfig?.supportEmail || 'support@example.com',
+      ...(siteConfig?.phone && { telephone: siteConfig.phone }),
+      availableLanguage: siteConfig?.enabledLanguages || ['en'],
+    },
+    ...(siteConfig?.contactInfo && {
+      sameAs: [
+        siteConfig.contactInfo.whatsappNumber && `https://wa.me/${siteConfig.contactInfo.whatsappNumber}`,
+        siteConfig.contactInfo.telegramUsername && `https://t.me/${siteConfig.contactInfo.telegramUsername}`,
+      ].filter(Boolean),
+    }),
+  });
+  
+  allSchemas.push({
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: brandName,
+    url: PUBLIC_SITE_URL,
+    description: truncatedDesc,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${PUBLIC_SITE_URL}/search?q={search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  });
+}
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content={truncatedDesc} />
+<meta name="robots" content={robots} />
+<meta name="googlebot" content={robots} />
+<meta name="theme-color" content={siteConfig?.primaryColor || "#3b82f6"} />
+<meta name="generator" content={Astro.generator} />
+
+{effectiveFocusKeyword && <meta name="keywords" content={`${effectiveFocusKeyword}, ${effectiveFocusKeyword} service, best ${effectiveFocusKeyword}${effectiveCountry ? `, ${effectiveFocusKeyword} ${effectiveCountry}` : ''}`} />}
+
+<link rel="canonical" href={canonicalURL} />
+
+{Object.entries(languages).map(([lang, url]) => (
+  <link rel="alternate" hreflang={lang} href={url} />
+))}
+{Object.keys(languages).length > 0 && (
+  <link rel="alternate" hreflang="x-default" href={canonicalURL} />
+)}
+
+<meta property="og:type" content={ogType} />
+<meta property="og:url" content={canonicalURL} />
+<meta property="og:title" content={truncatedTitle} />
+<meta property="og:description" content={truncatedDesc} />
+<meta property="og:image" content={fullOgImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:site_name" content={brandName} />
+<meta property="og:locale" content={locale.replace('-', '_')} />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:url" content={canonicalURL} />
+<meta name="twitter:title" content={truncatedTitle} />
+<meta name="twitter:description" content={truncatedDesc} />
+<meta name="twitter:image" content={fullOgImage} />
+
+{articleDate && <meta property="article:published_time" content={articleDate.toISOString()} />}
+{articleModified && <meta property="article:modified_time" content={articleModified.toISOString()} />}
+{articleAuthor && <meta property="article:author" content={articleAuthor} />}
+{articleTags.map(tag => (
+  <meta property="article:tag" content={tag} />
+))}
+
+{allSchemas.map((schemaItem) => (
+  <script type="application/ld+json" set:html={JSON.stringify(schemaItem)} />
+))}
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+<title>{siteTitle}</title>

@@ -1,0 +1,95 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SEO from '../../components/SEO.astro';
+import { generateBreadcrumbSchema } from '../../utils/schema';
+
+const [serviceInfoEntries, blogPosts] = await Promise.all([
+  getCollection('service-info'),
+  getCollection('blog').catch(() => []),
+]);
+
+const serviceInfo = serviceInfoEntries[0];
+const data = serviceInfo?.data || {};
+const baseUrl = data.siteUrl || Astro.url.origin;
+
+const sortedPosts = blogPosts.sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+
+const breadcrumbSchema = generateBreadcrumbSchema([
+  { name: 'Home', url: baseUrl },
+  { name: 'Blog', url: `${baseUrl}/blog` },
+]);
+---
+
+<BaseLayout>
+  <SEO
+    slot="head"
+    title={`Blog - ${data.brandName}`}
+    description={`Read the latest news, tips, and guides about IPTV streaming from ${data.brandName}.`}
+    canonicalURL={`${baseUrl}/blog`}
+    schema={[breadcrumbSchema]}
+  />
+
+  <section class="py-20 bg-gradient-to-b from-background to-muted/30">
+    <div class="container mx-auto px-4 text-center">
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">Blog</h1>
+      <p class="text-xl text-muted-foreground max-w-2xl mx-auto">
+        Stay updated with the latest news, tips, and streaming guides.
+      </p>
+    </div>
+  </section>
+
+  <section class="py-16">
+    <div class="container mx-auto px-4">
+      {sortedPosts.length > 0 ? (
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {sortedPosts.map(post => (
+            <article class="bg-card rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-colors">
+              {post.data.image && (
+                <img
+                  src={post.data.image}
+                  alt={post.data.imageAlt || post.data.title}
+                  class="w-full h-48 object-cover"
+                  loading="lazy"
+                />
+              )}
+              <div class="p-6">
+                <div class="flex flex-wrap gap-2 mb-3">
+                  {post.data.tags.slice(0, 3).map(tag => (
+                    <span class="text-xs px-2 py-1 bg-muted rounded-full text-muted-foreground">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <h2 class="text-xl font-semibold mb-2">
+                  <a href={`/blog/${post.id}`} class="hover:text-primary transition-colors">
+                    {post.data.title}
+                  </a>
+                </h2>
+                <p class="text-muted-foreground text-sm mb-4 line-clamp-2">
+                  {post.data.description}
+                </p>
+                <div class="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{post.data.author}</span>
+                  <time datetime={post.data.pubDate.toISOString()}>
+                    {post.data.pubDate.toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </time>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-12">
+          <p class="text-muted-foreground">No blog posts yet. Check back soon!</p>
+        </div>
+      )}
+    </div>
+  </section>
+</BaseLayout>
