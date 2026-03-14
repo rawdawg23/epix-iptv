@@ -1,0 +1,77 @@
+---
+import EditorLayout from '../../layouts/EditorLayout.astro';
+---
+
+<EditorLayout title="SEO" currentTab="/admin/editor/seo">
+  <h1 class="text-2xl font-bold mb-2">SEO defaults</h1>
+  <p class="text-muted-foreground mb-6">Default meta and social tags used when a page doesn’t set its own. Good for search engines and sharing.</p>
+
+  <form id="seo-form" class="space-y-8">
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">Defaults</h2>
+      <div class="space-y-4">
+        <div>
+          <label for="default_meta_title" class="block text-sm font-medium mb-1">Default meta title</label>
+          <input type="text" id="default_meta_title" name="default_meta_title" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="Your Brand – Tagline" />
+        </div>
+        <div>
+          <label for="default_meta_description" class="block text-sm font-medium mb-1">Default meta description</label>
+          <textarea id="default_meta_description" name="default_meta_description" rows="2" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground"></textarea>
+        </div>
+        <div>
+          <label for="default_focus_keyword" class="block text-sm font-medium mb-1">Default focus keyword</label>
+          <input type="text" id="default_focus_keyword" name="default_focus_keyword" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">Social</h2>
+      <div class="space-y-4">
+        <div>
+          <label for="og_image_url" class="block text-sm font-medium mb-1">Default image URL (Open Graph)</label>
+          <input type="url" id="og_image_url" name="og_image_url" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="https://..." />
+        </div>
+        <div>
+          <label for="twitter_handle" class="block text-sm font-medium mb-1">Twitter handle</label>
+          <input type="text" id="twitter_handle" name="twitter_handle" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="@yourbrand" />
+        </div>
+      </div>
+    </section>
+
+    <div class="flex gap-3">
+      <button type="submit" class="px-5 py-2.5 rounded bg-primary text-primary-foreground font-medium">Save SEO</button>
+      <span id="seo-status" class="text-sm text-muted-foreground self-center"></span>
+    </div>
+  </form>
+</EditorLayout>
+
+<script>
+  const form = document.getElementById('seo-form') as HTMLFormElement;
+  const status = document.getElementById('seo-status');
+  const headers = () => (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {};
+
+  fetch('/api/editor/seo', { headers: headers() })
+    .then(r => r.json())
+    .then(data => {
+      (form.querySelector('#default_meta_title') as HTMLInputElement).value = data.default_meta_title ?? '';
+      (form.querySelector('#default_meta_description') as HTMLTextAreaElement).value = data.default_meta_description ?? '';
+      (form.querySelector('#default_focus_keyword') as HTMLInputElement).value = data.default_focus_keyword ?? '';
+      (form.querySelector('#og_image_url') as HTMLInputElement).value = data.og_image_url ?? '';
+      (form.querySelector('#twitter_handle') as HTMLInputElement).value = data.twitter_handle ?? '';
+    });
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const body = {
+      default_meta_title: fd.get('default_meta_title'),
+      default_meta_description: fd.get('default_meta_description'),
+      default_focus_keyword: fd.get('default_focus_keyword'),
+      og_image_url: fd.get('og_image_url') || '',
+      twitter_handle: fd.get('twitter_handle') || '',
+    };
+    const res = await fetch('/api/editor/seo', { method: 'PUT', headers: headers(), body: JSON.stringify(body) });
+    if (status) status.textContent = res.ok ? 'Saved.' : 'Failed to save.';
+  });
+</script>

@@ -1,0 +1,85 @@
+---
+import EditorLayout from '../../layouts/EditorLayout.astro';
+---
+
+<EditorLayout title="Site settings" currentTab="/admin/editor/settings">
+  <h1 class="text-2xl font-bold mb-2">Site settings</h1>
+  <p class="text-muted-foreground mb-6">Your brand, contact info, and payment options. These appear across the site.</p>
+
+  <form id="settings-form" class="space-y-8">
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">General</h2>
+      <div class="space-y-4">
+        <div>
+          <label for="brandName" class="block text-sm font-medium mb-1">Brand name</label>
+          <input type="text" id="brandName" name="brandName" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="epix iptv" />
+        </div>
+        <div>
+          <label for="siteUrl" class="block text-sm font-medium mb-1">Site URL</label>
+          <input type="url" id="siteUrl" name="siteUrl" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="https://yoursite.com" />
+        </div>
+        <div>
+          <label for="supportEmail" class="block text-sm font-medium mb-1">Support email</label>
+          <input type="email" id="supportEmail" name="supportEmail" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="support@example.com" />
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">Payment</h2>
+      <div class="space-y-4">
+        <div>
+          <label for="paymentType" class="block text-sm font-medium mb-1">Payment type</label>
+          <select id="paymentType" name="paymentType" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground">
+            <option value="whatsapp">WhatsApp</option>
+            <option value="paygate">Paygate (crypto)</option>
+            <option value="email">Email</option>
+            <option value="custom_link">Custom link</option>
+          </select>
+          <p class="text-xs text-muted-foreground mt-1">How customers pay or contact you for orders</p>
+        </div>
+        <div id="payment-extra" class="space-y-4"></div>
+      </div>
+    </section>
+
+    <div class="flex gap-3">
+      <button type="submit" class="px-5 py-2.5 rounded bg-primary text-primary-foreground font-medium">Save settings</button>
+      <span id="settings-status" class="text-sm text-muted-foreground self-center"></span>
+    </div>
+  </form>
+
+  <script>
+    const form = document.getElementById('settings-form') as HTMLFormElement;
+    const status = document.getElementById('settings-status');
+
+    async function load() {
+      const res = await fetch('/api/editor/config', { headers: (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {} });
+      const data = await res.json();
+      if (data.brandName != null) (form.querySelector('#brandName') as HTMLInputElement).value = data.brandName;
+      if (data.siteUrl != null) (form.querySelector('#siteUrl') as HTMLInputElement).value = data.siteUrl;
+      if (data.supportEmail != null) (form.querySelector('#supportEmail') as HTMLInputElement).value = data.supportEmail;
+      if (data.paymentSettings?.paymentType != null) (form.querySelector('#paymentType') as HTMLSelectElement).value = data.paymentSettings.paymentType;
+    }
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const body = {
+        brandName: (fd.get('brandName') as string) || '',
+        siteUrl: (fd.get('siteUrl') as string) || '',
+        supportEmail: (fd.get('supportEmail') as string) || '',
+        paymentSettings: {
+          paymentType: (fd.get('paymentType') as string) || 'whatsapp',
+        },
+      };
+      const res = await fetch('/api/editor/config', {
+        method: 'PUT',
+        headers: (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {},
+        body: JSON.stringify(body),
+      });
+      if (status) status.textContent = res.ok ? 'Saved.' : 'Failed to save.';
+    });
+
+    load();
+  </script>
+</EditorLayout>

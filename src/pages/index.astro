@@ -4,7 +4,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import SEO from '../components/SEO.astro';
 import HeroSection from '../components/HeroSection';
 import FeatureGrid from '../components/FeatureGrid';
-import FilmsSeriesSection from '../components/FilmsSeriesSection';
+import TMDBMediaCarousel from '../components/TMDBMediaCarousel';
 import SportsSection from '../components/SportsSection';
 import GuaranteeSection from '../components/GuaranteeSection';
 import HowToPurchaseSection from '../components/HowToPurchaseSection';
@@ -136,12 +136,8 @@ const schemas = [
     <FeatureGrid client:visible features={data.features} primaryColor={data.primaryColor} />
   )}
 
-  <!-- Section 2: Films & Series -->
-  <FilmsSeriesSection 
-    client:visible 
-    brandName={data.brandName} 
-    primaryColor={data.primaryColor} 
-  />
+  <!-- Section 2: Movies & Series (TMDB carousel) -->
+  <TMDBMediaCarousel client:load />
 
   <!-- Section 3: Sports -->
   <SportsSection 

@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SEO from '../../components/SEO.astro';
+---
+
+<BaseLayout>
+  <SEO slot="head" title="Product" description="Product details." />
+  <section class="section-container">
+    <div class="container mx-auto px-4 max-w-4xl">
+      <div id="product-root">
+        <p class="text-muted-foreground">Loading…</p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const slug = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('slug');
+  const root = document.getElementById('product-root');
+  if (!slug && root) {
+    root.innerHTML = '<p class="text-muted-foreground">Product not found.</p>';
+  } else if (slug && root) {
+    fetch(`/api/store/products/${encodeURIComponent(slug)}`)
+      .then(r => r.json())
+      .then(p => {
+        const price = (p.price_cents / 100).toFixed(2);
+        const compare = p.compare_at_cents ? (p.compare_at_cents / 100).toFixed(2) : '';
+        const img = p.image_url ? `<img src="${p.image_url}" alt="${p.name.replace(/"/g,'&quot;')}" class="w-full max-w-md aspect-square object-cover rounded-lg border border-border" />` : '<div class="w-full max-w-md aspect-square bg-card border border-border rounded-lg flex items-center justify-center text-muted-foreground">No image</div>';
+        root.innerHTML = `
+          <div class="flex flex-col md:flex-row gap-8">
+            <div class="shrink-0">${img}</div>
+            <div class="flex-1">
+              <h1 class="text-2xl font-bold">${p.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</h1>
+              ${p.sku ? `<p class="text-sm text-muted-foreground mt-1">SKU: ${p.sku}</p>` : ''}
+              <p class="mt-4 text-lg font-bold">$${price}${compare ? ` <span class="text-muted-foreground line-through text-base">$${compare}</span>` : ''}</p>
+              <p class="mt-4 text-foreground">${(p.description || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br/>')}</p>
+              <div class="mt-6 flex items-center gap-4">
+                <input type="number" id="product-qty" min="1" value="1" class="w-20 px-3 py-2 rounded border border-border bg-background text-foreground" />
+                <button type="button" id="add-to-cart" data-product-id="${p.id}" data-product-name="${p.name}" data-price-cents="${p.price_cents}" class="px-6 py-2 rounded bg-primary text-primary-foreground font-medium">Add to cart</button>
+              </div>
+              ${p.stock_quantity !== undefined && p.stock_quantity < 10 ? `<p class="mt-2 text-sm text-amber-500">Only ${p.stock_quantity} left</p>` : ''}
+            </div>
+          </div>
+        `;
+        const btn = document.getElementById('add-to-cart');
+        const qty = document.getElementById('product-qty') as HTMLInputElement;
+        btn?.addEventListener('click', () => {
+          const cart = JSON.parse(localStorage.getItem('store_cart') || '[]');
+          const existing = cart.find((i: { productId: string }) => i.productId === p.id);
+          const n = Math.max(1, parseInt(qty?.value || '1', 10) || 1);
+          if (existing) existing.quantity += n;
+          else cart.push({ productId: p.id, productName: p.name, priceCents: p.price_cents, quantity: n });
+          localStorage.setItem('store_cart', JSON.stringify(cart));
+          window.location.href = '/store/cart';
+        });
+      })
+      .catch(() => { if (root) root.innerHTML = '<p class="text-muted-foreground">Product not found.</p>'; });
+  }
+</script>

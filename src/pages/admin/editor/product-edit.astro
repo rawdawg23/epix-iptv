@@ -1,0 +1,144 @@
+---
+import EditorLayout from '../../layouts/EditorLayout.astro';
+---
+
+<EditorLayout title="Edit product" currentTab="/admin/editor/products">
+  <h1 class="text-2xl font-bold mb-2">Edit product</h1>
+  <p class="text-muted-foreground mb-6">Product details, inventory, and SEO.</p>
+
+  <form id="product-form" class="space-y-8">
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">Content</h2>
+      <div class="space-y-4">
+        <div>
+          <label for="name" class="block text-sm font-medium mb-1">Name *</label>
+          <input type="text" id="name" name="name" required class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+        </div>
+        <div>
+          <label for="slug" class="block text-sm font-medium mb-1">URL slug *</label>
+          <input type="text" id="slug" name="slug" required class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="my-product" />
+        </div>
+        <div>
+          <label for="short_description" class="block text-sm font-medium mb-1">Short description</label>
+          <input type="text" id="short_description" name="short_description" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+        </div>
+        <div>
+          <label for="description" class="block text-sm font-medium mb-1">Description</label>
+          <textarea id="description" name="description" rows="4" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground"></textarea>
+        </div>
+        <div>
+          <label for="image_url" class="block text-sm font-medium mb-1">Image URL</label>
+          <input type="url" id="image_url" name="image_url" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">Pricing & inventory</h2>
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="price_cents" class="block text-sm font-medium mb-1">Price (cents) *</label>
+            <input type="number" id="price_cents" name="price_cents" required min="0" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="999" />
+            <p class="text-xs text-muted-foreground mt-1">e.g. 999 = $9.99</p>
+          </div>
+          <div>
+            <label for="compare_at_cents" class="block text-sm font-medium mb-1">Compare at (cents)</label>
+            <input type="number" id="compare_at_cents" name="compare_at_cents" min="0" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+          </div>
+        </div>
+        <div>
+          <label for="sku" class="block text-sm font-medium mb-1">SKU</label>
+          <input type="text" id="sku" name="sku" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+        </div>
+        <div>
+          <label for="stock_quantity" class="block text-sm font-medium mb-1">Stock quantity</label>
+          <input type="number" id="stock_quantity" name="stock_quantity" min="0" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" value="0" />
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="track_inventory" name="track_inventory" checked class="rounded border-border" />
+          <label for="track_inventory" class="text-sm">Track inventory</label>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="is_active" name="is_active" checked class="rounded border-border" />
+          <label for="is_active" class="text-sm">Active (visible in store)</label>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">SEO</h2>
+      <div class="space-y-4">
+        <div>
+          <label for="meta_title" class="block text-sm font-medium mb-1">Meta title</label>
+          <input type="text" id="meta_title" name="meta_title" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+        </div>
+        <div>
+          <label for="meta_description" class="block text-sm font-medium mb-1">Meta description</label>
+          <textarea id="meta_description" name="meta_description" rows="2" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <div class="flex gap-3">
+      <button type="submit" class="px-5 py-2.5 rounded bg-primary text-primary-foreground font-medium">Save product</button>
+      <span id="product-status" class="text-sm text-muted-foreground self-center"></span>
+    </div>
+  </form>
+</EditorLayout>
+
+<script>
+  const form = document.getElementById('product-form') as HTMLFormElement;
+  const status = document.getElementById('product-status');
+  const headers = () => (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {};
+  const id = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('id');
+
+  if (id) {
+    fetch(`/api/editor/products/${id}`, { headers: headers() })
+      .then(r => r.json())
+      .then(data => {
+        (form.querySelector('#name') as HTMLInputElement).value = data.name ?? '';
+        (form.querySelector('#slug') as HTMLInputElement).value = data.slug ?? '';
+        (form.querySelector('#short_description') as HTMLInputElement).value = data.short_description ?? '';
+        (form.querySelector('#description') as HTMLTextAreaElement).value = data.description ?? '';
+        (form.querySelector('#image_url') as HTMLInputElement).value = data.image_url ?? '';
+        (form.querySelector('#price_cents') as HTMLInputElement).value = data.price_cents ?? '';
+        (form.querySelector('#compare_at_cents') as HTMLInputElement).value = data.compare_at_cents ?? '';
+        (form.querySelector('#sku') as HTMLInputElement).value = data.sku ?? '';
+        (form.querySelector('#stock_quantity') as HTMLInputElement).value = data.stock_quantity ?? 0;
+        (form.querySelector('#track_inventory') as HTMLInputElement).checked = data.track_inventory !== false;
+        (form.querySelector('#is_active') as HTMLInputElement).checked = data.is_active !== false;
+        (form.querySelector('#meta_title') as HTMLInputElement).value = data.meta_title ?? '';
+        (form.querySelector('#meta_description') as HTMLTextAreaElement).value = data.meta_description ?? '';
+      });
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const body = {
+      name: fd.get('name'),
+      slug: fd.get('slug'),
+      short_description: fd.get('short_description') || '',
+      description: fd.get('description') || '',
+      image_url: fd.get('image_url') || null,
+      price_cents: Number(fd.get('price_cents')) || 0,
+      compare_at_cents: fd.get('compare_at_cents') ? Number(fd.get('compare_at_cents')) : null,
+      sku: fd.get('sku') || null,
+      stock_quantity: Number(fd.get('stock_quantity')) || 0,
+      track_inventory: fd.get('track_inventory') === 'on',
+      is_active: fd.get('is_active') === 'on',
+      order_num: 0,
+      meta_title: fd.get('meta_title') || null,
+      meta_description: fd.get('meta_description') || null,
+    };
+    const url = id ? `/api/editor/products/${id}` : '/api/editor/products';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: headers(), body: JSON.stringify(body) });
+    if (status) status.textContent = res.ok ? 'Saved.' : 'Failed to save.';
+    if (res.ok && !id) {
+      const d = await res.json();
+      window.location.href = `/admin/editor/product-edit?id=${d.id}`;
+    }
+  });
+</script>

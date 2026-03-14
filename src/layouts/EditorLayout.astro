@@ -1,0 +1,123 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  currentTab?: string;
+}
+
+const { title, currentTab = '' } = Astro.props;
+
+const nav = [
+  { href: '/admin/editor', label: 'Dashboard', icon: 'dashboard' },
+  { href: '/admin/editor/settings', label: 'Site settings', icon: 'settings' },
+  { href: '/admin/editor/pages', label: 'Pages', icon: 'pages' },
+  { href: '/admin/editor/pricing', label: 'Pricing', icon: 'pricing' },
+  { href: '/admin/editor/faq', label: 'FAQ', icon: 'faq' },
+  { href: '/admin/editor/products', label: 'Store', icon: 'store' },
+  { href: '/admin/editor/orders', label: 'Orders', icon: 'orders' },
+  { href: '/admin/editor/support', label: 'Support channels', icon: 'support' },
+  { href: '/admin/editor/seo', label: 'SEO', icon: 'seo' },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} – Site Editor</title>
+    <slot name="head" />
+  </head>
+  <body class="min-h-screen bg-background text-foreground antialiased">
+    <div class="flex min-h-screen">
+      <!-- Sidebar (WP-style) -->
+      <aside class="w-64 shrink-0 border-r border-border bg-card flex flex-col">
+        <div class="p-4 border-b border-border">
+          <a href="/admin/editor" class="font-bold text-lg text-primary">Site Editor</a>
+          <p class="text-xs text-muted-foreground mt-1">Manage your site content</p>
+        </div>
+        <nav class="flex-1 p-2 space-y-0.5">
+          {nav.map((item) => (
+            <a
+              href={item.href}
+              class:list={[
+                'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors',
+                currentTab === item.href ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              ]}
+            >
+              <span class="w-5 h-5 flex items-center justify-center text-current" aria-hidden="true">
+                {item.icon === 'dashboard' && '◉'}
+                {item.icon === 'settings' && '⚙'}
+                {item.icon === 'pages' && '📄'}
+                {item.icon === 'pricing' && '💰'}
+                {item.icon === 'faq' && '❓'}
+                {item.icon === 'store' && '🛒'}
+                {item.icon === 'orders' && '📦'}
+                {item.icon === 'support' && '💬'}
+                {item.icon === 'seo' && '🔍'}
+              </span>
+              {item.label}
+            </a>
+          ))}
+        </nav>
+        <div class="p-3 border-t border-border">
+          <a href="/" class="text-xs text-muted-foreground hover:text-foreground">← Back to site</a>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main class="flex-1 overflow-auto">
+        <!-- Admin key bar (shown until key is set) -->
+        <div id="editor-key-bar" class="hidden bg-amber-500/20 border-b border-amber-500/40 px-6 py-3 flex items-center justify-between gap-4">
+          <p class="text-sm text-amber-200">Enter your admin key to save changes.</p>
+          <div class="flex gap-2">
+            <input
+              type="password"
+              id="editor-admin-key"
+              placeholder="Admin key"
+              class="px-3 py-1.5 rounded bg-background border border-border text-foreground text-sm w-48"
+            />
+            <button type="button" id="editor-save-key" class="px-4 py-1.5 rounded bg-primary text-primary-foreground text-sm font-medium">Save</button>
+          </div>
+        </div>
+
+        <div class="p-6 lg:p-8 max-w-4xl">
+          <slot />
+        </div>
+      </main>
+    </div>
+
+    <script define:vars={{ currentTab: currentTab }}>
+      const KEY = 'editor_admin_secret';
+      const bar = document.getElementById('editor-key-bar');
+      const input = document.getElementById('editor-admin-key');
+      const saveBtn = document.getElementById('editor-save-key');
+
+      function getKey() {
+        return typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(KEY) : null;
+      }
+
+      if (bar && input && saveBtn) {
+        if (!getKey()) {
+          bar.classList.remove('hidden');
+        }
+        saveBtn.addEventListener('click', () => {
+          const v = input?.value?.trim();
+          if (v) {
+            sessionStorage.setItem(KEY, v);
+            bar.classList.add('hidden');
+          }
+        });
+      }
+
+      window.getEditorHeaders = function () {
+        const k = getKey();
+        return k ? { 'X-Admin-Secret': k, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+      };
+      window.getEditorApi = function (path) {
+        return (typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '') + '/api/editor' + path;
+      };
+    </script>
+  </body>
+</html>

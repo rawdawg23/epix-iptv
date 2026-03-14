@@ -1,0 +1,42 @@
+---
+import EditorLayout from '../../layouts/EditorLayout.astro';
+---
+
+<EditorLayout title="Pages" currentTab="/admin/editor/pages">
+  <h1 class="text-2xl font-bold mb-2">Pages</h1>
+  <p class="text-muted-foreground mb-6">Create and edit pages. Each page has its own SEO fields.</p>
+
+  <div class="mb-6">
+    <a href="/admin/editor/page-edit" class="inline-flex items-center gap-2 px-4 py-2 rounded bg-primary text-primary-foreground font-medium text-sm">+ Add page</a>
+  </div>
+
+  <div id="pages-list" class="space-y-2">
+    <p class="text-muted-foreground">Loading…</p>
+  </div>
+</EditorLayout>
+
+<script>
+  const list = document.getElementById('pages-list');
+  const headers = () => (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {};
+
+  async function load() {
+    const res = await fetch('/api/editor/pages', { headers: headers() });
+    const data = await res.json();
+    if (!list) return;
+    if (data.pages?.length === 0) {
+      list.innerHTML = '<p class="text-muted-foreground">No pages yet. Add one above.</p>';
+      return;
+    }
+    list.innerHTML = data.pages.map((p: { id: string; title: string; slug: string }) =>
+      `<div class="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
+        <div>
+          <span class="font-medium">${escapeHtml(p.title)}</span>
+          <span class="text-muted-foreground text-sm ml-2">/${escapeHtml(p.slug)}</span>
+        </div>
+        <a href="/admin/editor/page-edit?id=${encodeURIComponent(p.id)}" class="text-sm text-primary hover:underline">Edit</a>
+      </div>`
+    ).join('');
+  }
+  function escapeHtml(s: string) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  load();
+</script>

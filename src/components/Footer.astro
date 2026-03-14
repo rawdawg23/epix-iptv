@@ -102,6 +102,9 @@ const socialLinks = data.socialLinks || {};
       </div>
     </div>
 
+    <div id="footer-support-channels" class="mt-8 flex flex-wrap gap-4">
+      <!-- Telegram / WhatsApp from admin support settings (loaded by script) -->
+    </div>
     <div class="mt-12 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
       <p class="text-sm text-muted-foreground">
         &copy; {currentYear} {data.brandName || 'epix iptv​'}. All rights reserved.
@@ -114,3 +117,27 @@ const socialLinks = data.socialLinks || {};
     </div>
   </div>
 </footer>
+
+<script>
+  (async function () {
+    const el = document.getElementById('footer-support-channels');
+    if (!el) return;
+    try {
+      const res = await fetch('/api/support-channels');
+      const data = await res.json();
+      const parts = [];
+      if (data.telegram?.enabled && data.telegram?.username) {
+        const u = data.telegram.username.trim();
+        const href = u.startsWith('http') ? u : `https://t.me/${u.replace(/^@/, '')}`;
+        parts.push(`<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-2">Telegram</a>`);
+      }
+      if (data.whatsapp?.enabled && data.whatsapp?.number) {
+        const num = data.whatsapp.number.replace(/\D/g, '');
+        const msg = encodeURIComponent(data.whatsapp.message || '');
+        const href = `https://wa.me/${num}${msg ? '?text=' + msg : ''}`;
+        parts.push(`<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-2">WhatsApp</a>`);
+      }
+      if (parts.length) el.innerHTML = parts.join('');
+    } catch (_) {}
+  })();
+</script>

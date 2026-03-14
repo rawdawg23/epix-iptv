@@ -1,0 +1,51 @@
+---
+import EditorLayout from '../../layouts/EditorLayout.astro';
+---
+
+<EditorLayout title="Orders" currentTab="/admin/editor/orders">
+  <h1 class="text-2xl font-bold mb-2">Orders</h1>
+  <p class="text-muted-foreground mb-6">View and update order status. Full ecommerce control.</p>
+
+  <div class="mb-4 flex gap-2">
+    <a href="?" class="px-3 py-1.5 rounded border border-border text-sm">All</a>
+    <a href="?status=pending" class="px-3 py-1.5 rounded border border-border text-sm">Pending</a>
+    <a href="?status=paid" class="px-3 py-1.5 rounded border border-border text-sm">Paid</a>
+    <a href="?status=shipped" class="px-3 py-1.5 rounded border border-border text-sm">Shipped</a>
+    <a href="?status=delivered" class="px-3 py-1.5 rounded border border-border text-sm">Delivered</a>
+  </div>
+
+  <div id="orders-list" class="space-y-2">
+    <p class="text-muted-foreground">Loading…</p>
+  </div>
+</EditorLayout>
+
+<script>
+  const list = document.getElementById('orders-list');
+  const headers = () => (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {};
+  const status = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('status') || '';
+
+  async function load() {
+    const url = status ? `/api/editor/orders?status=${encodeURIComponent(status)}` : '/api/editor/orders';
+    const res = await fetch(url, { headers: headers() });
+    const data = await res.json();
+    if (!list) return;
+    if (!data.orders?.length) {
+      list.innerHTML = '<p class="text-muted-foreground">No orders.</p>';
+      return;
+    }
+    list.innerHTML = data.orders.map((o: { id: string; order_number: string; email: string; status: string; total_cents: number; currency: string; created_at: string }) =>
+      `<div class="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
+        <div>
+          <span class="font-medium">${o.order_number}</span>
+          <span class="text-muted-foreground text-sm ml-2">${o.email}</span>
+          <span class="ml-2 px-2 py-0.5 rounded text-xs ${o.status === 'pending' ? 'bg-amber-500/20' : o.status === 'paid' ? 'bg-green-500/20' : 'bg-muted'}">${o.status}</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <span>${o.currency} ${(o.total_cents/100).toFixed(2)}</span>
+          <a href="/admin/editor/order-detail?id=${encodeURIComponent(o.id)}" class="text-sm text-primary hover:underline">View</a>
+        </div>
+      </div>`
+    ).join('');
+  }
+  load();
+</script>

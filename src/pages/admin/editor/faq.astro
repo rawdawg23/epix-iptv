@@ -1,0 +1,39 @@
+---
+import EditorLayout from '../../layouts/EditorLayout.astro';
+---
+
+<EditorLayout title="FAQ" currentTab="/admin/editor/faq">
+  <h1 class="text-2xl font-bold mb-2">FAQ</h1>
+  <p class="text-muted-foreground mb-6">Questions and answers. Each can have SEO fields.</p>
+
+  <div class="mb-6">
+    <a href="/admin/editor/faq-edit" class="inline-flex items-center gap-2 px-4 py-2 rounded bg-primary text-primary-foreground font-medium text-sm">+ Add FAQ</a>
+  </div>
+
+  <div id="faq-list" class="space-y-2">
+    <p class="text-muted-foreground">Loading…</p>
+  </div>
+</EditorLayout>
+
+<script>
+  const list = document.getElementById('faq-list');
+  const headers = () => (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {};
+  function esc(s: string) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  async function load() {
+    const res = await fetch('/api/editor/faq', { headers: headers() });
+    const data = await res.json();
+    if (!list) return;
+    if (!data.faq?.length) {
+      list.innerHTML = '<p class="text-muted-foreground">No FAQ yet. Add one above.</p>';
+      return;
+    }
+    list.innerHTML = data.faq.map((f: { id: string; question: string }) =>
+      `<div class="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
+        <span class="font-medium">${esc(f.question)}</span>
+        <a href="/admin/editor/faq-edit?id=${encodeURIComponent(f.id)}" class="text-sm text-primary hover:underline">Edit</a>
+      </div>`
+    ).join('');
+  }
+  load();
+</script>

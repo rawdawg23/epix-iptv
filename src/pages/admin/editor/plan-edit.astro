@@ -1,0 +1,125 @@
+---
+import EditorLayout from '../../layouts/EditorLayout.astro';
+---
+
+<EditorLayout title="Edit plan" currentTab="/admin/editor/pricing">
+  <h1 class="text-2xl font-bold mb-2">Edit plan</h1>
+  <p class="text-muted-foreground mb-6">Pricing and SEO for this plan.</p>
+
+  <form id="plan-form" class="space-y-8">
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">Content</h2>
+      <div class="space-y-4">
+        <div>
+          <label for="name" class="block text-sm font-medium mb-1">Plan name</label>
+          <input type="text" id="name" name="name" required class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="price" class="block text-sm font-medium mb-1">Price</label>
+            <input type="number" id="price" name="price" step="0.01" required class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+          </div>
+          <div>
+            <label for="currency" class="block text-sm font-medium mb-1">Currency</label>
+            <input type="text" id="currency" name="currency" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" value="USD" />
+          </div>
+        </div>
+        <div>
+          <label for="billing_period" class="block text-sm font-medium mb-1">Billing period</label>
+          <select id="billing_period" name="billing_period" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground">
+            <option value="monthly">Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="annual">Annual</option>
+          </select>
+        </div>
+        <div>
+          <label for="description" class="block text-sm font-medium mb-1">Description</label>
+          <textarea id="description" name="description" rows="2" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground"></textarea>
+        </div>
+        <div>
+          <label for="features" class="block text-sm font-medium mb-1">Features (one per line)</label>
+          <textarea id="features" name="features" rows="6" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground font-mono text-sm" placeholder="HD channels&#10;24/7 support&#10;..."></textarea>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="is_featured" name="is_featured" class="rounded border-border" />
+          <label for="is_featured" class="text-sm">Featured plan</label>
+        </div>
+        <div>
+          <label for="cta_text" class="block text-sm font-medium mb-1">Button text</label>
+          <input type="text" id="cta_text" name="cta_text" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" value="Subscribe Now" />
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">SEO</h2>
+      <div class="space-y-4">
+        <div>
+          <label for="meta_title" class="block text-sm font-medium mb-1">Meta title</label>
+          <input type="text" id="meta_title" name="meta_title" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+        </div>
+        <div>
+          <label for="meta_description" class="block text-sm font-medium mb-1">Meta description</label>
+          <textarea id="meta_description" name="meta_description" rows="2" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <div class="flex gap-3">
+      <button type="submit" class="px-5 py-2.5 rounded bg-primary text-primary-foreground font-medium">Save plan</button>
+      <span id="plan-status" class="text-sm text-muted-foreground self-center"></span>
+    </div>
+  </form>
+</EditorLayout>
+
+<script>
+  const form = document.getElementById('plan-form') as HTMLFormElement;
+  const status = document.getElementById('plan-status');
+  const headers = () => (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {};
+  const id = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('id');
+
+  if (id) {
+    fetch(`/api/editor/pricing/${id}`, { headers: headers() })
+      .then(r => r.json())
+      .then(data => {
+        (form.querySelector('#name') as HTMLInputElement).value = data.name ?? '';
+        (form.querySelector('#price') as HTMLInputElement).value = data.price ?? '';
+        (form.querySelector('#currency') as HTMLInputElement).value = data.currency ?? 'USD';
+        (form.querySelector('#billing_period') as HTMLSelectElement).value = data.billing_period ?? 'monthly';
+        (form.querySelector('#description') as HTMLTextAreaElement).value = data.description ?? '';
+        (form.querySelector('#features') as HTMLTextAreaElement).value = Array.isArray(data.features) ? data.features.join('\n') : '';
+        (form.querySelector('#is_featured') as HTMLInputElement).checked = !!data.is_featured;
+        (form.querySelector('#cta_text') as HTMLInputElement).value = data.cta_text ?? 'Subscribe Now';
+        (form.querySelector('#meta_title') as HTMLInputElement).value = data.meta_title ?? '';
+        (form.querySelector('#meta_description') as HTMLTextAreaElement).value = data.meta_description ?? '';
+      });
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const featuresText = (fd.get('features') as string) || '';
+    const features = featuresText.split('\n').map(s => s.trim()).filter(Boolean);
+    const body = {
+      name: fd.get('name'),
+      price: Number(fd.get('price')),
+      currency: fd.get('currency') || 'USD',
+      billing_period: fd.get('billing_period') || 'monthly',
+      description: fd.get('description') || '',
+      features,
+      is_featured: fd.get('is_featured') === 'on',
+      cta_text: fd.get('cta_text') || 'Subscribe Now',
+      order_num: 0,
+      meta_title: fd.get('meta_title') || null,
+      meta_description: fd.get('meta_description') || null,
+    };
+    const url = id ? `/api/editor/pricing/${id}` : '/api/editor/pricing';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: headers(), body: JSON.stringify(body) });
+    if (status) status.textContent = res.ok ? 'Saved.' : 'Failed to save.';
+    if (res.ok && !id) {
+      const d = await res.json();
+      window.location.href = `/admin/editor/plan-edit?id=${d.id}`;
+    }
+  });
+</script>

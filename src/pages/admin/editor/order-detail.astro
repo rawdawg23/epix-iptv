@@ -1,0 +1,80 @@
+---
+import EditorLayout from '../../layouts/EditorLayout.astro';
+---
+
+<EditorLayout title="Order" currentTab="/admin/editor/orders">
+  <h1 class="text-2xl font-bold mb-2">Order</h1>
+  <p class="text-muted-foreground mb-6">View details and update status.</p>
+
+  <div id="order-root" class="space-y-6">
+    <p class="text-muted-foreground">Loading…</p>
+  </div>
+
+  <section class="mt-8 rounded-lg border border-border bg-card p-6">
+    <h2 class="text-lg font-semibold mb-4">Update status</h2>
+    <form id="status-form" class="flex items-center gap-4">
+      <select id="order-status" name="status" class="px-3 py-2 rounded border border-border bg-background text-foreground">
+        <option value="pending">Pending</option>
+        <option value="paid">Paid</option>
+        <option value="processing">Processing</option>
+        <option value="shipped">Shipped</option>
+        <option value="delivered">Delivered</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <button type="submit" class="px-4 py-2 rounded bg-primary text-primary-foreground font-medium text-sm">Update</button>
+      <span id="status-msg" class="text-sm text-muted-foreground"></span>
+    </form>
+  </section>
+</EditorLayout>
+
+<script>
+  const root = document.getElementById('order-root');
+  const statusForm = document.getElementById('status-form') as HTMLFormElement;
+  const statusMsg = document.getElementById('status-msg');
+  const headers = () => (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {};
+  const id = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('id');
+
+  function esc(s: string) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  async function load() {
+    if (!id) return;
+    const res = await fetch(`/api/editor/orders/${id}`, { headers: headers() });
+    const data = await res.json();
+    if (!data.order || !root) return;
+    const o = data.order;
+    (document.querySelector('#order-status') as HTMLSelectElement).value = o.status;
+    root.innerHTML = `
+      <div class="rounded-lg border border-border bg-card p-6">
+        <p><strong>Order</strong> ${esc(o.order_number)}</p>
+        <p><strong>Email</strong> ${esc(o.email)}</p>
+        <p><strong>Status</strong> ${esc(o.status)}</p>
+        <p><strong>Total</strong> ${o.currency} ${(o.total_cents/100).toFixed(2)}</p>
+        <p><strong>Date</strong> ${new Date(o.created_at).toLocaleString()}</p>
+        ${o.shipping_address_json && Object.keys(o.shipping_address_json).length ? `<p class="mt-2"><strong>Shipping</strong><br/>${esc(JSON.stringify(o.shipping_address_json))}</p>` : ''}
+      </div>
+      <div class="rounded-lg border border-border bg-card p-6">
+        <h3 class="font-semibold mb-2">Items</h3>
+        <ul class="space-y-2">
+          ${(data.items || []).map((i: { product_name: string; quantity: number; total_cents: number }) =>
+            `<li>${esc(i.product_name)} × ${i.quantity} — $${(i.total_cents/100).toFixed(2)}</li>`
+          ).join('')}
+        </ul>
+      </div>
+    `;
+  }
+
+  statusForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const status = (document.getElementById('order-status') as HTMLSelectElement).value;
+    const res = await fetch(`/api/editor/orders/${id}`, {
+      method: 'PATCH',
+      headers: headers(),
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+    if (statusMsg) statusMsg.textContent = res.ok ? 'Updated.' : (data.error || 'Failed');
+    if (res.ok) load();
+  });
+
+  load();
+</script>

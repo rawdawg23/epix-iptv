@@ -26,8 +26,19 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased min-h-screen;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-image: linear-gradient(
+        to bottom,
+        rgba(10, 10, 10, 0.92) 0%,
+        rgba(10, 10, 10, 0.88) 50%,
+        rgba(10, 10, 10, 0.92) 100%
+      ),
+      url("/channel-logos-bg.png");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 }
 
@@ -310,4 +321,25 @@
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Horizontal carousel scroll - hide scrollbar but keep scroll */
+.carousel-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+.carousel-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.carousel-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.carousel-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+.carousel-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted-foreground);
 }

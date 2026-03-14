@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SEO from '../../components/SEO.astro';
+---
+
+<BaseLayout>
+  <SEO slot="head" title="Order confirmed" description="Thank you for your order." />
+  <section class="section-container">
+    <div class="container mx-auto px-4 max-w-xl text-center">
+      <h1 class="text-2xl font-bold mb-4">Order confirmed</h1>
+      <p class="text-muted-foreground mb-6">Thank you. We've received your order and will process it shortly.</p>
+      <p id="order-number" class="font-mono text-primary mb-6"></p>
+      <a href="/store" class="inline-block px-6 py-2 rounded bg-primary text-primary-foreground">Continue shopping</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const order = params.get('order');
+  const el = document.getElementById('order-number');
+  if (el) el.textContent = order ? `Order #${order.slice(0, 8)}…` : '';
+</script>

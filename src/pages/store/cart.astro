@@ -1,0 +1,42 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SEO from '../../components/SEO.astro';
+---
+
+<BaseLayout>
+  <SEO slot="head" title="Cart" description="Your cart." />
+  <section class="section-container">
+    <div class="container mx-auto px-4 max-w-2xl">
+      <h1 class="text-2xl font-bold mb-6">Cart</h1>
+      <div id="cart-root">
+        <p class="text-muted-foreground">Loading…</p>
+      </div>
+      <div id="cart-actions" class="mt-6 hidden">
+        <a href="/store/checkout" class="inline-block px-6 py-3 rounded bg-primary text-primary-foreground font-medium">Proceed to checkout</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const root = document.getElementById('cart-root');
+  const actions = document.getElementById('cart-actions');
+  const cart = JSON.parse(localStorage.getItem('store_cart') || '[]');
+  if (!cart.length && root) {
+    root.innerHTML = '<p class="text-muted-foreground">Your cart is empty. <a href="/store" class="text-primary hover:underline">Browse store</a>.</p>';
+  } else if (root) {
+    let total = 0;
+    root.innerHTML = cart.map((item: { productId: string; productName: string; priceCents: number; quantity: number }) => {
+      const line = item.priceCents * item.quantity;
+      total += line;
+      return `<div class="flex justify-between items-center py-3 border-b border-border">
+        <div>
+          <span class="font-medium">${item.productName.replace(/</g,'&lt;')}</span>
+          <span class="text-muted-foreground text-sm ml-2">× ${item.quantity}</span>
+        </div>
+        <span>$${(line/100).toFixed(2)}</span>
+      </div>`;
+    }).join('') + `<div class="flex justify-between items-center py-4 font-bold text-lg"><span>Total</span><span>$${(total/100).toFixed(2)}</span></div>`;
+    if (actions) actions.classList.remove('hidden');
+  }
+</script>

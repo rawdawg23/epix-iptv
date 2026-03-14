@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SEO from '../../components/SEO.astro';
+---
+
+<BaseLayout>
+  <SEO slot="head" title="Store" description="Shop our products." />
+  <section class="section-container">
+    <div class="container mx-auto px-4">
+      <h1 class="section-title">Store</h1>
+      <p class="section-subtitle">Browse and buy.</p>
+      <div id="store-products" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+        <p class="text-muted-foreground col-span-full">Loading…</p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  async function load() {
+    const res = await fetch('/api/store/products');
+    const data = await res.json();
+    const el = document.getElementById('store-products');
+    if (!el) return;
+    if (!data.products?.length) {
+      el.innerHTML = '<p class="text-muted-foreground col-span-full">No products yet.</p>';
+      return;
+    }
+    el.innerHTML = data.products.map((p: { id: string; name: string; slug: string; short_description: string; price_cents: number; compare_at_cents?: number; image_url?: string }) => {
+      const price = (p.price_cents / 100).toFixed(2);
+      const compare = p.compare_at_cents ? (p.compare_at_cents / 100).toFixed(2) : '';
+      const img = p.image_url ? `<img src="${p.image_url}" alt="${escapeAttr(p.name)}" class="w-full aspect-square object-cover rounded-lg border border-border" />` : '<div class="w-full aspect-square bg-card border border-border rounded-lg flex items-center justify-center text-muted-foreground">No image</div>';
+      return `<a href="/store/product?slug=${encodeURIComponent(p.slug)}" class="block rounded-lg border border-border bg-card overflow-hidden hover:border-primary transition-colors">
+        ${img}
+        <div class="p-4">
+          <h2 class="font-semibold">${escapeHtml(p.name)}</h2>
+          <p class="text-sm text-muted-foreground mt-1 line-clamp-2">${escapeHtml(p.short_description || '')}</p>
+          <p class="mt-2 font-bold">$${price}${compare ? ` <span class="text-muted-foreground line-through text-sm">$${compare}</span>` : ''}</p>
+        </div>
+      </a>`;
+    }).join('');
+  }
+  function escapeHtml(s: string) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function escapeAttr(s: string) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+  load();
+</script>

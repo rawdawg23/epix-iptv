@@ -1,0 +1,46 @@
+---
+import EditorLayout from '../../layouts/EditorLayout.astro';
+---
+
+<EditorLayout title="Store" currentTab="/admin/editor/products">
+  <h1 class="text-2xl font-bold mb-2">Products</h1>
+  <p class="text-muted-foreground mb-6">Manage your store products. Full ecommerce control.</p>
+
+  <div class="mb-6">
+    <a href="/admin/editor/product-edit" class="inline-flex items-center gap-2 px-4 py-2 rounded bg-primary text-primary-foreground font-medium text-sm">+ Add product</a>
+  </div>
+
+  <div id="products-list" class="space-y-2">
+    <p class="text-muted-foreground">Loading…</p>
+  </div>
+</EditorLayout>
+
+<script>
+  const list = document.getElementById('products-list');
+  const headers = () => (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {};
+  function esc(s: string) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  async function load() {
+    const res = await fetch('/api/editor/products', { headers: headers() });
+    const data = await res.json();
+    if (!list) return;
+    if (!data.products?.length) {
+      list.innerHTML = '<p class="text-muted-foreground">No products yet. Add one above.</p>';
+      return;
+    }
+    list.innerHTML = data.products.map((p: { id: string; name: string; slug: string; price_cents: number; stock_quantity: number; is_active: boolean }) =>
+      `<div class="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
+        <div>
+          <span class="font-medium">${esc(p.name)}</span>
+          <span class="text-muted-foreground text-sm ml-2">$${(p.price_cents/100).toFixed(2)}</span>
+          ${!p.is_active ? '<span class="ml-2 text-xs text-amber-500">Inactive</span>' : ''}
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="text-sm text-muted-foreground">Stock: ${p.stock_quantity}</span>
+          <a href="/admin/editor/product-edit?id=${encodeURIComponent(p.id)}" class="text-sm text-primary hover:underline">Edit</a>
+        </div>
+      </div>`
+    ).join('');
+  }
+  load();
+</script>

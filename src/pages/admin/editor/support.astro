@@ -1,0 +1,92 @@
+---
+import EditorLayout from '../../layouts/EditorLayout.astro';
+---
+
+<EditorLayout title="Support channels" currentTab="/admin/editor/support">
+  <h1 class="text-2xl font-bold mb-2">Support channels</h1>
+  <p class="text-muted-foreground mb-6">Turn Telegram and WhatsApp on or off and set the details. These appear on the contact page and in the footer.</p>
+
+  <form id="support-form" class="space-y-8">
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">Telegram</h2>
+      <div class="space-y-4">
+        <div class="flex items-center gap-3">
+          <input type="checkbox" id="telegram_enabled" name="telegram_enabled" class="rounded border-border" />
+          <label for="telegram_enabled" class="font-medium">Enable Telegram support</label>
+        </div>
+        <div>
+          <label for="telegram_username" class="block text-sm font-medium mb-1">Telegram username or invite link</label>
+          <input type="text" id="telegram_username" name="telegram_username" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="@yourusername or https://t.me/yourusername" />
+          <p class="text-xs text-muted-foreground mt-1">Without @ if username only. Full link (e.g. https://t.me/username) also works.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">WhatsApp</h2>
+      <div class="space-y-4">
+        <div class="flex items-center gap-3">
+          <input type="checkbox" id="whatsapp_enabled" name="whatsapp_enabled" class="rounded border-border" />
+          <label for="whatsapp_enabled" class="font-medium">Enable WhatsApp support</label>
+        </div>
+        <div>
+          <label for="whatsapp_number" class="block text-sm font-medium mb-1">WhatsApp number (with country code, no + or spaces)</label>
+          <input type="text" id="whatsapp_number" name="whatsapp_number" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="1234567890" />
+          <p class="text-xs text-muted-foreground mt-1">e.g. 441234567890 for UK</p>
+        </div>
+        <div>
+          <label for="whatsapp_message" class="block text-sm font-medium mb-1">Pre-filled message (optional)</label>
+          <input type="text" id="whatsapp_message" name="whatsapp_message" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="Hi, I need support" />
+        </div>
+      </div>
+    </section>
+
+    <div class="flex gap-3">
+      <button type="submit" class="px-5 py-2.5 rounded bg-primary text-primary-foreground font-medium">Save</button>
+      <span id="support-status" class="text-sm text-muted-foreground self-center"></span>
+    </div>
+  </form>
+</EditorLayout>
+
+<script>
+  const form = document.getElementById('support-form') as HTMLFormElement;
+  const status = document.getElementById('support-status');
+  const headers = () => (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {};
+
+  async function load() {
+    const res = await fetch('/api/editor/config', { headers: headers() });
+    const data = await res.json();
+    const support = data.supportChannels ?? {};
+    const tg = support.telegram ?? {};
+    const wa = support.whatsapp ?? {};
+    (form.querySelector('#telegram_enabled') as HTMLInputElement).checked = !!tg.enabled;
+    (form.querySelector('#telegram_username') as HTMLInputElement).value = tg.username ?? '';
+    (form.querySelector('#whatsapp_enabled') as HTMLInputElement).checked = !!wa.enabled;
+    (form.querySelector('#whatsapp_number') as HTMLInputElement).value = wa.number ?? '';
+    (form.querySelector('#whatsapp_message') as HTMLInputElement).value = wa.message ?? '';
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const supportChannels = {
+      telegram: {
+        enabled: fd.get('telegram_enabled') === 'on',
+        username: (fd.get('telegram_username') as string)?.trim() || '',
+      },
+      whatsapp: {
+        enabled: fd.get('whatsapp_enabled') === 'on',
+        number: (fd.get('whatsapp_number') as string)?.trim().replace(/\D/g, '') || '',
+        message: (fd.get('whatsapp_message') as string)?.trim() || '',
+      },
+    };
+    const res = await fetch('/api/editor/config', {
+      method: 'PUT',
+      headers: headers(),
+      body: JSON.stringify({ supportChannels }),
+    });
+    if (status) status.textContent = res.ok ? 'Saved.' : 'Failed to save.';
+  });
+
+  load();
+</script>

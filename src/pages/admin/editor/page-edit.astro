@@ -1,0 +1,99 @@
+---
+import EditorLayout from '../../layouts/EditorLayout.astro';
+---
+
+<EditorLayout title="Edit page" currentTab="/admin/editor/pages">
+  <h1 class="text-2xl font-bold mb-2">Edit page</h1>
+  <p class="text-muted-foreground mb-6">Content and SEO for this page.</p>
+
+  <form id="page-form" class="space-y-8">
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">Content</h2>
+      <div class="space-y-4">
+        <div>
+          <label for="title" class="block text-sm font-medium mb-1">Title</label>
+          <input type="text" id="title" name="title" required class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+        </div>
+        <div>
+          <label for="slug" class="block text-sm font-medium mb-1">URL slug</label>
+          <input type="text" id="slug" name="slug" required class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="about" />
+          <p class="text-xs text-muted-foreground mt-1">Used in the URL, e.g. /about</p>
+        </div>
+        <div>
+          <label for="description" class="block text-sm font-medium mb-1">Short description</label>
+          <input type="text" id="description" name="description" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+        </div>
+        <div>
+          <label for="body_md" class="block text-sm font-medium mb-1">Body (Markdown)</label>
+          <textarea id="body_md" name="body_md" rows="12" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground font-mono text-sm"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-border bg-card p-6">
+      <h2 class="text-lg font-semibold mb-4">SEO</h2>
+      <div class="space-y-4">
+        <div>
+          <label for="meta_title" class="block text-sm font-medium mb-1">Meta title</label>
+          <input type="text" id="meta_title" name="meta_title" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" placeholder="Shown in search results" />
+        </div>
+        <div>
+          <label for="meta_description" class="block text-sm font-medium mb-1">Meta description</label>
+          <textarea id="meta_description" name="meta_description" rows="2" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground"></textarea>
+        </div>
+        <div>
+          <label for="focus_keyword" class="block text-sm font-medium mb-1">Focus keyword</label>
+          <input type="text" id="focus_keyword" name="focus_keyword" class="w-full px-3 py-2 rounded border border-border bg-background text-foreground" />
+        </div>
+      </div>
+    </section>
+
+    <div class="flex gap-3">
+      <button type="submit" class="px-5 py-2.5 rounded bg-primary text-primary-foreground font-medium">Save page</button>
+      <span id="page-status" class="text-sm text-muted-foreground self-center"></span>
+    </div>
+  </form>
+</EditorLayout>
+
+<script>
+  const form = document.getElementById('page-form') as HTMLFormElement;
+  const status = document.getElementById('page-status');
+  const headers = () => (window as unknown as { getEditorHeaders?: () => Record<string, string> }).getEditorHeaders?.() ?? {};
+  const id = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('id');
+
+  if (id) {
+    fetch(`/api/editor/pages/${id}`, { headers: headers() })
+      .then(r => r.json())
+      .then(data => {
+        (form.querySelector('#title') as HTMLInputElement).value = data.title ?? '';
+        (form.querySelector('#slug') as HTMLInputElement).value = data.slug ?? '';
+        (form.querySelector('#description') as HTMLInputElement).value = data.description ?? '';
+        (form.querySelector('#body_md') as HTMLTextAreaElement).value = data.body_md ?? '';
+        (form.querySelector('#meta_title') as HTMLInputElement).value = data.meta_title ?? '';
+        (form.querySelector('#meta_description') as HTMLTextAreaElement).value = data.meta_description ?? '';
+        (form.querySelector('#focus_keyword') as HTMLInputElement).value = data.focus_keyword ?? '';
+      });
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const body = {
+      title: fd.get('title'),
+      slug: fd.get('slug'),
+      description: fd.get('description'),
+      body_md: fd.get('body_md'),
+      meta_title: fd.get('meta_title') || null,
+      meta_description: fd.get('meta_description') || null,
+      focus_keyword: fd.get('focus_keyword') || null,
+    };
+    const url = id ? `/api/editor/pages/${id}` : '/api/editor/pages';
+    const method = id ? 'PUT' : 'POST';
+    const res = await fetch(url, { method, headers: headers(), body: JSON.stringify(body) });
+    if (status) status.textContent = res.ok ? 'Saved.' : 'Failed to save.';
+    if (res.ok && !id) {
+      const d = await res.json();
+      window.location.href = `/admin/editor/page-edit?id=${d.id}`;
+    }
+  });
+</script>
